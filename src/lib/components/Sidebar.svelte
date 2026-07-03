@@ -63,7 +63,7 @@
     Conversations
     <button
       type="button"
-      class="text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300"
+      class="text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 text-lg font-bold leading-none w-5 h-5 flex items-center justify-center"
       on:click={onNewConversation}
       aria-label="Nouvelle conversation"
     >
