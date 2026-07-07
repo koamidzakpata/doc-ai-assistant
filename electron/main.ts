@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { registerChatHandlers } from './ipc/chat.handler.js'
 import { registerDocumentHandlers } from './ipc/documents.handler.js'
 import { registerConversationHandlers } from './ipc/conversations.handler.js'
+import { registerApiKeyHandlers } from './ipc/apikey.handler.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -26,11 +27,17 @@ function createWindow() {
     width: 1280,
     height: 800,
     title: 'Doc AI Assistant',
+    backgroundColor: '#030712',
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
+  })
+
+  win.once('ready-to-show', () => {
+    win.show()
   })
 
   if (isDev) {
@@ -43,6 +50,7 @@ function createWindow() {
 registerChatHandlers()
 registerDocumentHandlers()
 registerConversationHandlers()
+registerApiKeyHandlers()
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {

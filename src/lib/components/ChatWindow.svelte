@@ -1,103 +1,137 @@
 <script lang="ts">
-  import type { Message } from '../types/index.js'
-  import { theme } from '../stores/theme.js'
+  import type { Message } from "../types/index.js";
+  import { theme } from "../stores/theme.js";
 
-  export const onMessageSend: (message: string) => Promise<string> = async () => ''
-  export let conversationId: string = ''
-  export let initialMessages: Message[] = []
-  export let onConversationUpdate: () => void = () => {}
+  export const onMessageSend: (message: string) => Promise<string> = async () =>
+    "";
+  export let conversationId: string = "";
+  export let initialMessages: Message[] = [];
+  export let onConversationUpdate: () => void = () => {};
 
-  let chatRef: any
+  let chatRef: any;
 
   export function reset(messages: Message[] = []) {
     if (chatRef) {
-      chatRef.clearMessages()
+      chatRef.clearMessages();
       if (messages.length > 0) {
         setTimeout(() => {
           messages.forEach((msg) => {
             chatRef.addMessage({
-              role: msg.role === 'user' ? 'user' : 'ai',
+              role: msg.role === "user" ? "user" : "ai",
               text: msg.text,
-            })
-          })
-        }, 100)
+            });
+          });
+        }, 100);
       }
     }
   }
 
   function setupChat(ref: any, messages: Message[]) {
-    if (!ref) return
+    if (!ref) return;
+
+    ref.stream = true;
 
     ref.connect = {
       handler: async (body: any, signals: any) => {
+        let fullText = "";
+        let unsubscribeChunk = (): void => {};
+        let unsubscribeDone = (): void => {};
+
         try {
-          const userMessage = body.messages[body.messages.length - 1]?.text || ''
+          const userMessage =
+            body.messages[body.messages.length - 1]?.text || "";
 
           await window.electronAPI.addMessage(conversationId, {
-            role: 'user',
+            role: "user",
             text: userMessage,
             timestamp: Date.now(),
-          })
+          });
 
-          const response = await window.electronAPI.sendChatMessage(conversationId, userMessage)
+          unsubscribeChunk = window.electronAPI.onChatChunk((chunk: string) => {
+            fullText += chunk;
+            signals.onResponse({ text: chunk });
+          });
+
+          const donePromise = new Promise<void>((resolve) => {
+            unsubscribeDone = window.electronAPI.onChatDone(() => {
+              resolve();
+            });
+          });
+
+          await window.electronAPI.sendChatMessage(conversationId, userMessage);
+          await donePromise;
+
+          signals.onClose();
 
           await window.electronAPI.addMessage(conversationId, {
-            role: 'ai',
-            text: response,
+            role: "ai",
+            text: fullText,
             timestamp: Date.now(),
-          })
+          });
 
-          onConversationUpdate()
-
-          signals.onResponse({ text: response })
+          onConversationUpdate();
         } catch (error) {
-          signals.onResponse({ error: 'Erreur lors de la communication avec l\'IA.' })
+          signals.onResponse({
+            error: "Erreur lors de la communication avec l'IA.",
+          });
+        } finally {
+          unsubscribeChunk();
+          unsubscribeDone();
         }
       },
-    }
+    };
 
     ref.submitButtonStyles = {
       submit: {
         container: {
-          default: { backgroundColor: 'unset' },
+          default: { backgroundColor: "unset" },
         },
         svg: {
           content:
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
         },
       },
-    }
+    };
 
     if (messages.length > 0) {
       setTimeout(() => {
         messages.forEach((msg) => {
           ref.addMessage({
-            role: msg.role === 'user' ? 'user' : 'ai',
+            role: msg.role === "user" ? "user" : "ai",
             text: msg.text,
-          })
-        })
-      }, 100)
+          });
+        });
+      }, 100);
     }
   }
 
-  $: isDark = $theme === 'dark'
+  $: isDark = $theme === "dark";
   $: chatStyle = isDark
-    ? 'width: 100%; height: 100%; border: none; border-radius: 0; background-color: #030712;'
-    : 'width: 100%; height: 100%; border: none; border-radius: 0; background-color: #f9fafb;'
+    ? "width: 100%; height: 100%; border: none; border-radius: 0; background-color: #030712;"
+    : "width: 100%; height: 100%; border: none; border-radius: 0; background-color: #f9fafb;";
   $: bubbleColors = isDark
-    ? { user: { backgroundColor: '#7c3aed', color: '#fff' }, ai: { backgroundColor: '#1f2937', color: '#fff' } }
-    : { user: { backgroundColor: '#7c3aed', color: '#fff' }, ai: { backgroundColor: '#e5e7eb', color: '#111827' } }
+    ? {
+        user: { backgroundColor: "#7c3aed", color: "#fff" },
+        ai: { backgroundColor: "#1f2937", color: "#fff" },
+      }
+    : {
+        user: { backgroundColor: "#7c3aed", color: "#fff" },
+        ai: { backgroundColor: "#e5e7eb", color: "#111827" },
+      };
   $: messageStylesJson = JSON.stringify({
     default: {
       shared: { bubble: bubbleColors.ai },
       user: { bubble: bubbleColors.user },
       ai: { bubble: bubbleColors.ai },
     },
-  })
+  });
 
-  // Se ré-exécute à chaque fois que chatRef change : au premier montage,
-  // ET après chaque recréation de <deep-chat> par le bloc {#key isDark}.
-  $: setupChat(chatRef, initialMessages)
+  let lastSetupRef: any = null;
+
+  $: if (chatRef && chatRef !== lastSetupRef) {
+    lastSetupRef = chatRef;
+    setupChat(chatRef, initialMessages);
+  }
 </script>
 
 <div class="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
@@ -105,7 +139,9 @@
     <deep-chat
       bind:this={chatRef}
       style={chatStyle}
-      textInput='{{"placeholder": {"text": "Posez une question sur vos documents..."}}}'
+      textInput={{
+        placeholder: { text: "Posez une question sur vos documents..." },
+      }}
       messageStyles={messageStylesJson}
     ></deep-chat>
   {/key}

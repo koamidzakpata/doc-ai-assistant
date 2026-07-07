@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { sendChatMessage, isGroqConfigured } from '../services/groq.service.js'
+import { streamChatMessage, isGroqConfigured } from '../services/groq.service.js'
 import { getConversationDocuments, getConversation } from '../services/conversations.service.js'
 import { searchRelevantChunks, buildContextFromChunks } from '../services/rag-search.service.js'
 
@@ -25,7 +25,7 @@ function buildFullContext(documents: { fileName: string; content: string }[]): s
 }
 
 export function registerChatHandlers() {
-  ipcMain.handle('chat:send', async (_event, conversationId: string, message: string) => {
+  ipcMain.handle('chat:send', async (event, conversationId: string, message: string) => {
     const documents = getConversationDocuments(conversationId)
 
     let context: string | undefined
@@ -44,14 +44,21 @@ export function registerChatHandlers() {
     const conversation = getConversation(conversationId)
     const allMessages = conversation?.messages ?? []
 
-    // On exclut le tout dernier message (celui qu'on vient de recevoir, déjà
-    // ajouté côté frontend avant cet appel) pour ne pas le dupliquer.
     const historyOnly = allMessages.slice(0, -1).slice(-MAX_HISTORY_MESSAGES)
-
     const history = historyOnly.map((m) => ({ role: m.role, text: m.text }))
 
-    const response = await sendChatMessage(message, context, history)
-    return response
+    try {
+      const fullText = await streamChatMessage(message, context, history, (chunk) => {
+        event.sender.send('chat:chunk', chunk)
+      })
+      event.sender.send('chat:done')
+      return fullText
+    } catch (error) {
+      console.error('Erreur lors de l\'appel à Groq:', error)
+      const errorMessage = 'Erreur : impossible de contacter le service IA. Vérifiez votre connexion et votre clé API.'
+      event.sender.send('chat:done')
+      return errorMessage
+    }
   })
 
   ipcMain.handle('chat:status', async () => {

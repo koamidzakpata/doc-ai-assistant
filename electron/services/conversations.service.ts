@@ -21,6 +21,7 @@ interface StoreSchema {
 }
 
 const store = new Store<StoreSchema>({
+  name: 'conversations',
   defaults: {
     conversations: [],
   },

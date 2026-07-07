@@ -3,6 +3,7 @@
   import Sidebar from './lib/components/Sidebar.svelte'
   import Header from './lib/components/Header.svelte'
   import ChatWindow from './lib/components/ChatWindow.svelte'
+  import ApiKeySetup from './lib/components/ApiKeySetup.svelte'
   import type { Conversation } from './lib/types/index.js'
   import { theme } from './lib/stores/theme.js'
 
@@ -10,10 +11,21 @@
   let activeConversation: Conversation | null = null
   let isConnected = false
   let chatWindow: ChatWindow
+  let apiKeyReady = false
+  let checkingApiKey = true
 
   onMount(async () => {
     theme.init()
 
+    apiKeyReady = await window.electronAPI.hasApiKey()
+    checkingApiKey = false
+
+    if (apiKeyReady) {
+      await loadApp()
+    }
+  })
+
+  async function loadApp() {
     isConnected = await window.electronAPI.getChatStatus()
 
     conversations = await window.electronAPI.listConversations()
@@ -24,7 +36,12 @@
     } else {
       activeConversation = conversations[0]
     }
-  })
+  }
+
+  async function handleKeySaved() {
+    apiKeyReady = true
+    await loadApp()
+  }
 
   async function refreshConversations() {
     conversations = await window.electronAPI.listConversations()
@@ -95,26 +112,32 @@
   $: conversationTitle = activeConversation?.title ?? 'Nouvelle conversation'
 </script>
 
-<div class="flex h-screen w-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white overflow-hidden">
-  <Sidebar
-    documents={sidebarDocuments}
-    conversations={sidebarConversations}
-    onAddDocument={handleAddDocument}
-    onRemoveDocument={handleRemoveDocument}
-    onNewConversation={handleNewConversation}
-    onSelectConversation={handleSelectConversation}
-    onDeleteConversation={handleDeleteConversation}
-  />
+{#if checkingApiKey}
+  <div class="flex h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-950" />
+{:else if !apiKeyReady}
+  <ApiKeySetup onKeySaved={handleKeySaved} />
+{:else}
+  <div class="flex h-screen w-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white overflow-hidden">
+    <Sidebar
+      documents={sidebarDocuments}
+      conversations={sidebarConversations}
+      onAddDocument={handleAddDocument}
+      onRemoveDocument={handleRemoveDocument}
+      onNewConversation={handleNewConversation}
+      onSelectConversation={handleSelectConversation}
+      onDeleteConversation={handleDeleteConversation}
+    />
 
-  <div class="flex-1 flex flex-col">
-    <Header {conversationTitle} {isConnected} />
-    {#if activeConversation}
-      <ChatWindow
-        bind:this={chatWindow}
-        conversationId={activeConversation.id}
-        initialMessages={activeConversation.messages}
-        onConversationUpdate={handleConversationUpdate}
-      />
-    {/if}
+    <div class="flex-1 flex flex-col">
+      <Header {conversationTitle} {isConnected} />
+      {#if activeConversation}
+        <ChatWindow
+          bind:this={chatWindow}
+          conversationId={activeConversation.id}
+          initialMessages={activeConversation.messages}
+          onConversationUpdate={handleConversationUpdate}
+        />
+      {/if}
+    </div>
   </div>
-</div>
+{/if}

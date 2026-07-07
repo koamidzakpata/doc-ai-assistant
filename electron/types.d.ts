@@ -14,6 +14,9 @@ interface ElectronAPI {
   createConversation: () => Promise<import('./lib/types').Conversation>
   deleteConversation: (id: string) => Promise<boolean>
   addMessage: (conversationId: string, message: import('./lib/types').Message) => Promise<import('./lib/types').Conversation>
+  getApiKey: () => Promise<string | undefined>
+  setApiKey: (key: string) => Promise<boolean>
+  hasApiKey: () => Promise<boolean>
 }
 
 interface Window {

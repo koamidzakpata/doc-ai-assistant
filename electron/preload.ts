@@ -15,4 +15,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteConversation: (id: string) => ipcRenderer.invoke('conversations:delete', id),
   addMessage: (conversationId: string, message: { role: 'user' | 'ai'; text: string; timestamp: number }) =>
     ipcRenderer.invoke('conversations:addMessage', conversationId, message),
+  getApiKey: () => ipcRenderer.invoke('apikey:get'),
+  setApiKey: (key: string) => ipcRenderer.invoke('apikey:set', key),
+  hasApiKey: () => ipcRenderer.invoke('apikey:has'),
+  onChatChunk: (callback: (chunk: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, chunk: string) => callback(chunk)
+    ipcRenderer.on('chat:chunk', listener)
+    return () => ipcRenderer.removeListener('chat:chunk', listener)
+  },
+  onChatDone: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('chat:done', listener)
+    return () => ipcRenderer.removeListener('chat:done', listener)
+  },
 })
