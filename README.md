@@ -44,7 +44,7 @@ doc-ai-assistant/
 
 ## Installation
 
-```bash
+\`\`\`bash
 # Cloner le dépôt
 git clone <url-du-repo>
 cd doc-ai-assistant
@@ -54,8 +54,20 @@ npm install
 
 # Configurer la clé API
 cp .env.example .env
-# Puis éditer .env et renseigner votre clé Groq
-```
+\`\`\`
+
+Puis ouvrez le fichier `.env` et renseignez votre propre clé API Groq :
+
+\`\`\`
+GROQ_API_KEY=votre_clé_api_groq
+\`\`\`
+
+> **Comment obtenir une clé API Groq (gratuite) :**
+> 1. Créez un compte sur [console.groq.com](https://console.groq.com/)
+> 2. Allez dans **API Keys** → **Create API Key**
+> 3. Copiez la clé générée et collez-la dans votre fichier `.env`
+>
+> Chaque utilisateur doit utiliser sa propre clé API. Ne partagez jamais votre clé et ne la commitez jamais dans le dépôt Git (le fichier `.env` est déjà exclu via `.gitignore`).
 
 ## Lancer en développement
 
@@ -77,6 +89,20 @@ Cette commande lance simultanément le serveur Vite (frontend) et l'application 
 ## Sécurité
 
 L'application applique une Content Security Policy (CSP) stricte au niveau du processus principal Electron : seules les connexions vers l'API Groq sont autorisées, et aucune ressource externe (police, script tiers, etc.) n'est chargée sans nécessité, afin de préserver la confidentialité des documents de l'utilisateur.
+
+## Démonstration vidéo
+
+Une courte vidéo de démonstration de l'application est disponible ici :
+
+🎥 [Voir la démonstration](https://drive.google.com/file/d/1ycOFAHHj2wbwdCYuvqUqQ_mL9ZCLrMLl/view?usp=sharing)
+
+La vidéo présente :
+- La création d'une nouvelle conversation
+- L'ajout et l'analyse d'un document (PDF/DOCX/TXT)
+- Une question basée sur le contenu du document (RAG)
+- Une question de suivi montrant la mémoire de contexte
+- La navigation entre les conversations et leurs documents respectifs
+- Le changement de thème clair/sombre
 
 ## Auteur
 
