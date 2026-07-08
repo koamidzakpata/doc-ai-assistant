@@ -17,6 +17,9 @@
   "build": {
     "appId": "com.dashmake.docaiassistant",
     "productName": "Doc AI Assistant",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"

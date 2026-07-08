@@ -2,6 +2,7 @@
 
 Assistant IA de bureau permettant de discuter avec ses propres documents (PDF, DOCX, TXT) grâce à une architecture RAG (Retrieval-Augmented Generation) locale, construit avec Electron, Svelte et l'API Groq.
 
+
 ## Fonctionnalités
 
 - **Chat IA conversationnel** avec mémoire d'historique (via Groq / Llama 3.3 70B)
@@ -26,16 +27,16 @@ Assistant IA de bureau permettant de discuter avec ses propres documents (PDF, D
 
 doc-ai-assistant/
 ├── electron/ # Processus principal Electron
-│   ├── main.ts  # Point d'entrée, fenêtre sécurité (CSP)
+│   ├── main.ts # Point d'entrée, fenêtre, sécurité (CSP)
 │   ├── preload.ts # Pont sécurisé (contextBridge)
 │   ├── ipc/ # Handlers de communication IPC
 │   └── services/ # Logique métier (Groq, RAG, parsing, conversations)
-├── src/                       # Frontend Svelte
+├── src/ # Frontend Svelte
 │   ├── App.svelte
 │   └── lib/
-│       ├── components/        # Sidebar, Header, ChatWindow
-│       ├── stores/            # Store de thème (dark/light)
-│       └── types/             # Types partagés
+│       ├── components/ # Sidebar, Header, ChatWindow
+│       ├── stores/ # Store de thème (dark/light)
+│       └── types/ # Types partagés
 
 ## Prérequis
 
@@ -44,30 +45,21 @@ doc-ai-assistant/
 
 ## Installation
 
-\`\`\`bash
+```bash
 # Cloner le dépôt
 git clone <url-du-repo>
 cd doc-ai-assistant
 
 # Installer les dépendances
 npm install
-
-# Configurer la clé API
-cp .env.example .env
-\`\`\`
-
-Puis ouvrez le fichier `.env` et renseignez votre propre clé API Groq :
-
-\`\`\`
-GROQ_API_KEY=votre_clé_api_groq
-\`\`\`
+```
 
 > **Comment obtenir une clé API Groq (gratuite) :**
 > 1. Créez un compte sur [console.groq.com](https://console.groq.com/)
 > 2. Allez dans **API Keys** → **Create API Key**
-> 3. Copiez la clé générée et collez-la dans votre fichier `.env`
+> 3. Copiez la clé générée
 >
-> Chaque utilisateur doit utiliser sa propre clé API. Ne partagez jamais votre clé et ne la commitez jamais dans le dépôt Git (le fichier `.env` est déjà exclu via `.gitignore`).
+> Aucune configuration manuelle de fichier n'est nécessaire : au premier lancement de l'application, un écran dédié vous demandera de coller votre clé API. Elle est stockée localement sur votre machine (via `electron-store`) et n'est jamais partagée ni versionnée dans le dépôt Git.
 
 ## Lancer en développement
 
@@ -85,6 +77,22 @@ Cette commande lance simultanément le serveur Vite (frontend) et l'application 
 | `npm run build` | Build de production du frontend |
 | `npm run electron:compile` | Compile le code TypeScript d'Electron |
 | `npm run check` | Vérification des types TypeScript / Svelte |
+| `npm run dist` | Build complet + génération de l'installeur Windows (.exe) |
+
+## Build de production (packaging)
+
+\`\`\`bash
+npm run dist
+\`\`\`
+
+Cette commande enchaîne automatiquement :
+1. `vite build` — build du frontend
+2. Compilation TypeScript du code Electron (processus principal + preload)
+3. `electron-builder` — génération de l'installeur Windows (NSIS)
+
+L'installeur (`Doc AI Assistant Setup 0.0.0.exe`) est généré dans le dossier `release/`.
+
+> **Note sur la compatibilité OS :** Le build actuel (`npm run dist`) génère uniquement un installeur **Windows** (`.exe` via NSIS), car electron-builder ne peut pas cross-compiler vers macOS/Linux depuis une machine Windows. Si vous êtes sur Mac ou Linux, clonez le dépôt et lancez `npm run dist` directement sur votre machine pour générer l'installeur correspondant à votre OS (nécessite d'ajouter les cibles `mac`/`linux` dans la config `build` du `package.json`).
 
 ## Sécurité
 
