@@ -4,8 +4,16 @@ declare module '*.svelte' {
   export default component
 }
 
+type ChatSendResult =
+  | { type: 'text'; text: string }
+  | { type: 'document'; format: 'pdf' | 'docx' | 'txt'; filename: string; content: string }
+
+type ExportResult =
+  | { success: true; filePath: string }
+  | { success: false; canceled: true }
+
 interface ElectronAPI {
-  sendChatMessage: (conversationId: string, message: string) => Promise<string>
+  sendChatMessage: (conversationId: string, message: string) => Promise<ChatSendResult>
   getChatStatus: () => Promise<boolean>
   selectDocuments: (conversationId: string) => Promise<{ fileName: string }[]>
   listDocuments: (conversationId: string) => Promise<string[]>
@@ -17,6 +25,7 @@ interface ElectronAPI {
   getApiKey: () => Promise<string | undefined>
   setApiKey: (key: string) => Promise<boolean>
   hasApiKey: () => Promise<boolean>
+  exportDocument: (format: 'pdf' | 'docx' | 'txt', filename: string, content: string) => Promise<ExportResult>
   onChatChunk: (callback: (chunk: string) => void) => () => void
   onChatDone: (callback: () => void) => () => void
 }

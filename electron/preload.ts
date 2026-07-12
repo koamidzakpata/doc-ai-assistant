@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getApiKey: () => ipcRenderer.invoke('apikey:get'),
   setApiKey: (key: string) => ipcRenderer.invoke('apikey:set', key),
   hasApiKey: () => ipcRenderer.invoke('apikey:has'),
+  exportDocument: (format: 'pdf' | 'docx' | 'txt', filename: string, content: string) =>
+    ipcRenderer.invoke('export:download', format, filename, content),
   onChatChunk: (callback: (chunk: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, chunk: string) => callback(chunk)
     ipcRenderer.on('chat:chunk', listener)

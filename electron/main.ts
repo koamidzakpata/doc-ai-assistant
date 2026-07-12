@@ -5,6 +5,7 @@ import { registerChatHandlers } from './ipc/chat.handler.js'
 import { registerDocumentHandlers } from './ipc/documents.handler.js'
 import { registerConversationHandlers } from './ipc/conversations.handler.js'
 import { registerApiKeyHandlers } from './ipc/apikey.handler.js'
+import { registerExportHandlers } from './ipc/export.handler.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -51,6 +52,7 @@ registerChatHandlers()
 registerDocumentHandlers()
 registerConversationHandlers()
 registerApiKeyHandlers()
+registerExportHandlers()
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {

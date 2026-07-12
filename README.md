@@ -12,6 +12,18 @@ Assistant IA de bureau permettant de discuter avec ses propres documents (PDF, D
 - **Persistance locale** : conversations et documents sauvegardés sur la machine (via `electron-store`), aucune base de données externe
 - **Thème clair / sombre** avec mémorisation du choix
 - **Sécurité renforcée** : Content Security Policy stricte, aucune ressource externe non essentielle chargée (conformément aux standards de confidentialité du projet)
+- **Génération de documents exportables** : sur demande explicite ("résumé en PDF", "exporte en DOCX"...), l'IA génère une synthèse détaillée des documents de la conversation, affichée dans un panneau d'aperçu latéral avec téléchargement en PDF, DOCX ou TXT
+
+## Export de documents générés par l'IA
+
+En plus de répondre aux questions sur vos documents, l'assistant peut générer de nouveaux documents à la demande :
+
+- **Résumés/synthèses** : "Fais-moi un résumé de tous les documents en PDF"
+- **Conversion de format** : "Convertis ce résumé en DOCX"
+
+Le document généré s'affiche dans un panneau d'aperçu à droite du chat, avec un bouton **Télécharger** qui ouvre une boîte de dialogue pour choisir l'emplacement d'enregistrement.
+
+> Note : cette fonctionnalité utilise le *tool calling* de Groq, l'IA ne déclenche la génération que sur demande explicite (mots-clés comme "pdf", "docx", "txt", "exporte", "génère"...), jamais pendant une conversation normale sur vos documents.
 
 ## Stack technique
 

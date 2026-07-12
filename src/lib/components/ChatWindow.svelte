@@ -7,6 +7,11 @@
   export let conversationId: string = "";
   export let initialMessages: Message[] = [];
   export let onConversationUpdate: () => void = () => {};
+  export let onDocumentGenerated: (doc: {
+    format: "pdf" | "docx" | "txt";
+    filename: string;
+    content: string;
+  }) => void = () => {};
 
   let chatRef: any;
 
@@ -58,16 +63,49 @@
             });
           });
 
-          await window.electronAPI.sendChatMessage(conversationId, userMessage);
+          const result = await window.electronAPI.sendChatMessage(
+            conversationId,
+            userMessage
+          );
           await donePromise;
 
-          signals.onClose();
+          if (result.type === "document") {
+            // Aucun chunk de texte n'a été streamé pour un document (le modèle a
+            // appelé l'outil create_document au lieu de répondre en texte) :
+            // on affiche un message de confirmation dans le chat, et on ouvre
+            // le panneau d'aperçu via le callback remonté au parent.
+            const confirmationText = `📄 Document généré : ${result.filename}.${result.format} — voir l'aperçu à droite.`;
+            signals.onResponse({ text: confirmationText });
+            signals.onClose();
 
-          await window.electronAPI.addMessage(conversationId, {
-            role: "ai",
-            text: fullText,
-            timestamp: Date.now(),
-          });
+            await window.electronAPI.addMessage(conversationId, {
+              role: "ai",
+              text: confirmationText,
+              timestamp: Date.now(),
+            });
+
+            onDocumentGenerated({
+              format: result.format,
+              filename: result.filename,
+              content: result.content,
+            });
+          } else {
+            const finalText = result.text || fullText || "Erreur : réponse vide.";
+
+            if (!fullText) {
+              // Aucun chunk n'a été streamé (ex: l'appel d'outil a échoué côté
+              // serveur avant tout streaming) : on affiche quand même le message
+              // à l'utilisateur, au lieu de le laisser sans réponse visible.
+              signals.onResponse({ text: finalText });
+            }
+            signals.onClose();
+
+            await window.electronAPI.addMessage(conversationId, {
+              role: "ai",
+              text: finalText,
+              timestamp: Date.now(),
+            });
+          }
 
           onConversationUpdate();
         } catch (error) {

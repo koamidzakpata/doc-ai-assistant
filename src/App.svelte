@@ -4,6 +4,7 @@
   import Header from './lib/components/Header.svelte'
   import ChatWindow from './lib/components/ChatWindow.svelte'
   import ApiKeySetup from './lib/components/ApiKeySetup.svelte'
+  import ArtifactPanel from './lib/components/ArtifactPanel.svelte'
   import type { Conversation } from './lib/types/index.js'
   import { theme } from './lib/stores/theme.js'
 
@@ -13,6 +14,13 @@
   let chatWindow: ChatWindow
   let apiKeyReady = false
   let checkingApiKey = true
+
+  // Document généré par l'IA en attente d'aperçu/téléchargement, ou null si aucun.
+  let currentArtifact: {
+    format: 'pdf' | 'docx' | 'txt'
+    filename: string
+    content: string
+  } | null = null
 
   onMount(async () => {
     theme.init()
@@ -55,6 +63,7 @@
     const newConv = await window.electronAPI.createConversation()
     conversations = [newConv, ...conversations]
     activeConversation = newConv
+    currentArtifact = null
     chatWindow.reset([])
   }
 
@@ -62,6 +71,7 @@
     const conv = conversations.find((c) => c.id === id)
     if (!conv || conv.id === activeConversation?.id) return
     activeConversation = conv
+    currentArtifact = null
     chatWindow.reset(conv.messages)
   }
 
@@ -76,6 +86,7 @@
       } else {
         activeConversation = conversations[0]
       }
+      currentArtifact = null
       chatWindow.reset(activeConversation.messages)
     }
   }
@@ -98,6 +109,18 @@
     await refreshConversations()
   }
 
+  function handleDocumentGenerated(doc: {
+    format: 'pdf' | 'docx' | 'txt'
+    filename: string
+    content: string
+  }) {
+    currentArtifact = doc
+  }
+
+  function handleCloseArtifact() {
+    currentArtifact = null
+  }
+
   $: sidebarConversations = conversations.map((c) => ({
     id: c.id,
     title: c.title,
@@ -113,7 +136,7 @@
 </script>
 
 {#if checkingApiKey}
-  <div class="flex h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-950" />
+  <div class="flex h-screen w-screen items-center justify-center bg-gray-50 dark:bg-gray-950"></div>
 {:else if !apiKeyReady}
   <ApiKeySetup onKeySaved={handleKeySaved} />
 {:else}
@@ -128,16 +151,32 @@
       onDeleteConversation={handleDeleteConversation}
     />
 
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col min-w-0">
       <Header {conversationTitle} {isConnected} />
-      {#if activeConversation}
-        <ChatWindow
-          bind:this={chatWindow}
-          conversationId={activeConversation.id}
-          initialMessages={activeConversation.messages}
-          onConversationUpdate={handleConversationUpdate}
-        />
-      {/if}
+      <div class="flex-1 flex min-h-0">
+        <div class="flex-1 flex flex-col min-w-0">
+          {#if activeConversation}
+            <ChatWindow
+              bind:this={chatWindow}
+              conversationId={activeConversation.id}
+              initialMessages={activeConversation.messages}
+              onConversationUpdate={handleConversationUpdate}
+              onDocumentGenerated={handleDocumentGenerated}
+            />
+          {/if}
+        </div>
+
+        {#if currentArtifact}
+          <div class="w-[420px] flex-shrink-0">
+            <ArtifactPanel
+              format={currentArtifact.format}
+              filename={currentArtifact.filename}
+              content={currentArtifact.content}
+              onClose={handleCloseArtifact}
+            />
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}
